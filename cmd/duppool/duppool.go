@@ -127,21 +127,7 @@ func main() {
 	}
 
 	if opts.NumWorkers < 0 {
-		log.Fatal("option NumWorkers must be non-negative")
-	}
-
-	queue := make(chan *Work)
-	results := make(chan [][]string)
-	done := make(chan bool)
-
-	writer := bufio.NewWriter(os.Stdout)
-	defer writer.Flush()
-	go FanInWriter(writer, results, done)
-
-	var wg sync.WaitGroup
-	for i := 0; i < opts.NumWorkers; i++ {
-		wg.Add(1)
-		go Worker(queue, results, &wg)
+		log.Fatal("value for --workers must be non-negative")
 	}
 
 	conn := goes.NewConnection(opts.ElasticSearchHost, opts.ElasticSearchPort)
@@ -163,6 +149,20 @@ func main() {
 		projector, err := dupsquash.ParseIndices(opts.FileColumn)
 		if err != nil {
 			log.Fatalf("could not parse column indices: %s\n", opts.FileColumn)
+		}
+
+		queue := make(chan *Work)
+		results := make(chan [][]string)
+		done := make(chan bool)
+
+		writer := bufio.NewWriter(os.Stdout)
+		defer writer.Flush()
+		go FanInWriter(writer, results, done)
+
+		var wg sync.WaitGroup
+		for i := 0; i < opts.NumWorkers; i++ {
+			wg.Add(1)
+			go Worker(queue, results, &wg)
 		}
 
 		for scanner.Scan() {
