@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"sync"
@@ -119,6 +120,15 @@ func main() {
 	if opts.ShowHelp {
 		argparser.WriteHelp(os.Stdout)
 		return
+	}
+
+	if opts.CpuProfile != "" {
+		f, err := os.Create(opts.CpuProfile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
 
 	if opts.NumWorkers == 0 {
