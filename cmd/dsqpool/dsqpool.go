@@ -64,10 +64,6 @@ func ConcatenateValuesNull(values []string, indices []int, nullValue string) (st
 	return buffer.String(), nil
 }
 
-func ConcatenateValues(values []string, indices []int) (string, error) {
-	return ConcatenateValuesNull(values, indices, "<NULL>")
-}
-
 func main() {
 	var opts struct {
 		ElasticSearchHost string `long:"host" default:"localhost" description:"elasticsearch host" value-name:"HOST"`
@@ -129,7 +125,7 @@ func main() {
 
 		for scanner.Scan() {
 			values := strings.Split(scanner.Text(), opts.FileDelimiter)
-			likeText, err := ConcatenateValues(values, projector)
+			likeText, err := ConcatenateValuesNull(values, projector, opts.FileNullValue)
 			if err != nil {
 				log.Fatal(err)
 			}
