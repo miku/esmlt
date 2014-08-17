@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-TARGETS = dsqpool dsqfilter
+TARGETS = duppool dupfilter
 
 # http://docs.travis-ci.com/user/languages/go/#Default-Test-Script
 test:
@@ -29,18 +29,17 @@ cover:
 	go get -d && go test -v	-coverprofile=coverage.out
 	go tool cover -html=coverage.out
 
-dsqpool:
-	go build cmd/dsqpool/dsqpool.go
+duppool:
+	go build cmd/duppool/duppool.go
 
-dsqfilter:
-	go build cmd/dsqfilter/dsqfilter.go
+dupfilter:
+	go build cmd/dupfilter/dupfilter.go
 
 # ==== packaging
 
 deb: $(TARGETS)
 	mkdir -p debian/dupsquash/usr/sbin
-	cp dsqfilter debian/dupsquash/usr/sbin
-	cp dsqpool debian/dupsquash/usr/sbin
+	cp $(TARGETS) debian/dupsquash/usr/sbin
 	cd debian && fakeroot dpkg-deb --build dupsquash .
 
 REPOPATH = /usr/share/nginx/html/repo/CentOS/6/x86_64
@@ -52,7 +51,6 @@ publish: rpm
 rpm: $(TARGETS)
 	mkdir -p $(HOME)/rpmbuild/{BUILD,SOURCES,SPECS,RPMS}
 	cp ./packaging/dupsquash.spec $(HOME)/rpmbuild/SPECS
-	cp dsqfilter $(HOME)/rpmbuild/BUILD
-	cp dsqpool $(HOME)/rpmbuild/BUILD
+	cp $(TARGETS) $(HOME)/rpmbuild/BUILD
 	./packaging/buildrpm.sh dupsquash
 	cp $(HOME)/rpmbuild/RPMS/x86_64/dupsquash*.rpm .
