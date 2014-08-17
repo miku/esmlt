@@ -17,10 +17,11 @@ dsqpool
           --file=FILENAME           onput file (TSV) with strings to compare
       -f, --column=COLUMN[S]        which column(s) to pick for the comparison (1)
           --index=NAME[S]           index or indices (space separated)
-      -x, --index-fields=NAME[S]    which index fields to use for comparison (content.245.a content.245.b)
-          --min-term-freq=          passed on lucene option (1)
-          --max-query-terms=        passed on lucene option (25)
-      -s, --size=                   number of results per query (5)
+      -x, --index-fields=NAME[S]    which index fields to use for comparison
+                                    (content.245.a content.245.b)
+          --min-term-freq=N         passed on lucene option (1)
+          --max-query-terms=N       passed on lucene option (25)
+      -s, --size=N                  number of results per query (5)
       -V, --version                 show version and exit (false)
       -h, --help                    show this help message (false)
 
