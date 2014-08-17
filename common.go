@@ -3,11 +3,20 @@ package dupsquash
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/belogik/goes"
 )
 
 const AppVersion = "0.1.0"
+
+// SearchConnection is an interface that is satisfied by goes.Connection and
+// can be satisfied by mock index connections for testing
+type SearchConnection interface {
+	Search(query map[string]interface{}, indexList []string, typeList []string, extraArgs url.Values) (goes.Response, error)
+}
 
 // ParseIndices parses strings like `2,4,5` into an int slice and adds a `shift`
 func ParseIndicesShift(s string, shift int) ([]int, error) {

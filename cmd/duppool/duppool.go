@@ -15,7 +15,7 @@ import (
 )
 
 // Query runs `query` over connection `conn` on `indices` and returns a slice of string slices
-func Query(conn *goes.Connection, indices *[]string, query *map[string]interface{}) [][]string {
+func Query(conn dupsquash.SearchConnection, indices *[]string, query *map[string]interface{}) [][]string {
 	extraArgs := make(url.Values, 1)
 	searchResults, err := conn.Search(*query, *indices, []string{""}, extraArgs)
 	if err != nil {
