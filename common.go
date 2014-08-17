@@ -10,6 +10,7 @@ import (
 	"github.com/belogik/goes"
 )
 
+// Application Version
 const AppVersion = "0.1.0"
 
 // SearchConnection is an interface that is satisfied by goes.Connection and
@@ -18,7 +19,7 @@ type SearchConnection interface {
 	Search(query map[string]interface{}, indexList []string, typeList []string, extraArgs url.Values) (goes.Response, error)
 }
 
-// ParseIndices parses strings like `2,4,5` into an int slice and adds a `shift`
+// ParseIndicesShift parses strings like `2,4,5` into an int slice and adds a `shift`
 func ParseIndicesShift(s string, shift int) ([]int, error) {
 	parts := strings.Split(s, ",")
 	var indices []int
@@ -59,7 +60,7 @@ func ConcatenateValuesNull(values []string, indices []int, nullValue string) (st
 	return strings.TrimSpace(buffer.String()), nil
 }
 
-// ConcatenateValuesNull extracts values according to indices slice and concatenates them,
+// ConcatenateValues extracts values according to indices slice and concatenates them,
 // uses a default `nullValue` of `<NULL>`
 func ConcatenateValues(values []string, indices []int) (string, error) {
 	return ConcatenateValuesNull(values, indices, "<NULL>")
