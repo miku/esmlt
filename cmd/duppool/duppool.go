@@ -3,16 +3,68 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net/url"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/belogik/goes"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/miku/dupsquash"
 )
+
+type Work struct {
+	Indices    []string
+	Connection dupsquash.SearchConnection
+
+	Fields        []string
+	LikeText      string
+	MinTermFreq   int
+	MaxQueryTerms int
+	Size          int
+
+	Values []string
+}
+
+func Worker(in chan *Work, out chan [][]string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for work := range in {
+		var query = map[string]interface{}{
+			"query": map[string]interface{}{
+				"more_like_this": map[string]interface{}{
+					"fields":          work.Fields,
+					"like_text":       work.LikeText,
+					"min_term_freq":   work.MinTermFreq,
+					"max_query_terms": work.MaxQueryTerms,
+				},
+			},
+			"size": work.Size,
+		}
+		queryResults := Query(work.Connection, &work.Indices, &query)
+		var results [][]string
+		for _, result := range queryResults {
+			parts := append(work.Values, result...)
+			results = append(results, parts)
+		}
+		out <- results
+	}
+}
+
+// FanInWriter writes the channel content to the writer
+func FanInWriter(writer io.Writer, in chan [][]string, done chan bool) {
+	for results := range in {
+		for _, result := range results {
+			writer.Write([]byte(strings.Join(result, "\t")))
+			writer.Write([]byte("\n"))
+		}
+	}
+	done <- true
+}
 
 // Query runs `query` over connection `conn` on `indices` and returns a slice of string slices
 func Query(conn dupsquash.SearchConnection, indices *[]string, query *map[string]interface{}) [][]string {
@@ -46,9 +98,12 @@ func main() {
 		MaxQueryTerms int    `long:"max-query-terms" description:"passed on lucene option" default:"25" value-name:"N"`
 		Size          int    `short:"s" long:"size" description:"number of results per query" default:"5" value-name:"N"`
 
-		ShowVersion bool `short:"V" default:"false" long:"version" description:"show version and exit"`
-		ShowHelp    bool `short:"h" default:"false" long:"help" description:"show this help message"`
+		NumWorkers  int    `short:"w" long:"workers" default:"0" description:"number of workers, 0 means number of available cpus" value-name:"N"`
+		ShowVersion bool   `short:"V" default:"false" long:"version" description:"show version and exit"`
+		ShowHelp    bool   `short:"h" default:"false" long:"help" description:"show this help message"`
+		CpuProfile  string `long:"cpuprofile" description:"write pprof file" value-name:"FILE"`
 	}
+
 	argparser := flags.NewParser(&opts, flags.PrintErrors|flags.PassDoubleDash)
 	_, err := argparser.Parse()
 	if err != nil {
@@ -64,6 +119,29 @@ func main() {
 	if opts.ShowHelp {
 		argparser.WriteHelp(os.Stdout)
 		return
+	}
+
+	if opts.NumWorkers == 0 {
+		opts.NumWorkers = runtime.NumCPU()
+		runtime.GOMAXPROCS(opts.NumWorkers)
+	}
+
+	if opts.NumWorkers < 0 {
+		log.Fatal("option NumWorkers must be non-negative")
+	}
+
+	queue := make(chan *Work)
+	results := make(chan [][]string)
+	done := make(chan bool)
+
+	writer := bufio.NewWriter(os.Stdout)
+	defer writer.Flush()
+	go FanInWriter(writer, results, done)
+
+	var wg sync.WaitGroup
+	for i := 0; i < opts.NumWorkers; i++ {
+		wg.Add(1)
+		go Worker(queue, results, &wg)
 	}
 
 	conn := goes.NewConnection(opts.ElasticSearchHost, opts.ElasticSearchPort)
@@ -94,27 +172,31 @@ func main() {
 				log.Fatal(err)
 			}
 
-			var query = map[string]interface{}{
-				"query": map[string]interface{}{
-					"more_like_this": map[string]interface{}{
-						"fields":          fields,
-						"like_text":       likeText,
-						"min_term_freq":   opts.MinTermFreq,
-						"max_query_terms": opts.MaxQueryTerms,
-					},
-				},
-				"size": opts.Size,
+			work := Work{
+				Indices:       indices,
+				Connection:    conn,
+				Fields:        fields,
+				LikeText:      likeText,
+				MinTermFreq:   opts.MinTermFreq,
+				MaxQueryTerms: opts.MaxQueryTerms,
+				Size:          opts.Size,
+				Values:        values,
 			}
-
-			results := Query(conn, &indices, &query)
-			for _, result := range results {
-				parts := append(values, result...)
-				fmt.Println(strings.Join(parts, "\t"))
-			}
+			queue <- &work
 		}
 
 		if err := scanner.Err(); err != nil {
 			log.Fatal(err)
+		}
+
+		close(queue)
+		wg.Wait()
+		close(results)
+		select {
+		case <-time.After(1e9):
+			break
+		case <-done:
+			break
 		}
 		return
 	}
