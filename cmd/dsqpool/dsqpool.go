@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"log"
 	"net/url"
@@ -27,41 +26,6 @@ func Query(conn *goes.Connection, indices *[]string, query *map[string]interface
 		results[i] = []string{hit.Index, hit.Id, strconv.FormatFloat(hit.Score, 'f', 3, 64)}
 	}
 	return results
-}
-
-// ParseIndices parses strings like `2,4,5` into an int slice
-func ParseIndicesShift(s string, shift int) ([]int, error) {
-	parts := strings.Split(s, ",")
-	var indices []int
-	for _, p := range parts {
-		i, err := strconv.ParseInt(p, 10, 0)
-		if err != nil {
-			return nil, err
-		}
-		indices = append(indices, int(i)+shift)
-	}
-	return indices, nil
-}
-
-// ParseIndices parses strings like `2,4,5` into an int slice
-func ParseIndices(s string) ([]int, error) {
-	return ParseIndicesShift(s, -1)
-}
-
-func ConcatenateValuesNull(values []string, indices []int, nullValue string) (string, error) {
-	var buffer bytes.Buffer
-	for _, i := range indices {
-		if i > len(values)-1 {
-			return "", fmt.Errorf("index %d exceeds array", i)
-		}
-		if values[i] == nullValue {
-			buffer.WriteString("")
-			continue
-		}
-		buffer.WriteString(values[i])
-		buffer.WriteString(" ")
-	}
-	return buffer.String(), nil
 }
 
 func main() {
@@ -118,14 +82,14 @@ func main() {
 		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
-		projector, err := ParseIndices(opts.FileColumn)
+		projector, err := dupsquash.ParseIndices(opts.FileColumn)
 		if err != nil {
 			log.Fatalf("could not parse column indices: %s\n", opts.FileColumn)
 		}
 
 		for scanner.Scan() {
 			values := strings.Split(scanner.Text(), opts.FileDelimiter)
-			likeText, err := ConcatenateValuesNull(values, projector, opts.FileNullValue)
+			likeText, err := dupsquash.ConcatenateValuesNull(values, projector, opts.FileNullValue)
 			if err != nil {
 				log.Fatal(err)
 			}
