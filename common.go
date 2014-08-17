@@ -23,7 +23,11 @@ func ParseIndicesShift(s string, shift int) ([]int, error) {
 	parts := strings.Split(s, ",")
 	var indices []int
 	for _, p := range parts {
-		i, err := strconv.ParseInt(p, 10, 0)
+		value := strings.TrimSpace(p)
+		if value == "" {
+			continue
+		}
+		i, err := strconv.ParseInt(value, 10, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +56,7 @@ func ConcatenateValuesNull(values []string, indices []int, nullValue string) (st
 		buffer.WriteString(values[i])
 		buffer.WriteString(" ")
 	}
-	return buffer.String(), nil
+	return strings.TrimSpace(buffer.String()), nil
 }
 
 // ConcatenateValuesNull extracts values according to indices slice and concatenates them,
