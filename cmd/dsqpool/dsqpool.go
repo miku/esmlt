@@ -38,9 +38,9 @@ func main() {
 
         Index         string `long:"index" description:"index or indices (space separated)" value-name:"NAME[S]"`
         IndexFields   string `short:"x" default:"content.245.a content.245.b" long:"index-fields"description:"which index fields to use for comparison" value-name:"NAME[S]"`
-        MinTermFreq   int    `long:"min-term-freq" description:"passed on lucene option" default:"1"`
-        MaxQueryTerms int    `long:"max-query-terms" description:"passed on lucene option" default:"25"`
-        Size          int    `short:"s" long:"size" description:"number of results per query" default:"5"`
+        MinTermFreq   int    `long:"min-term-freq" description:"passed on lucene option" default:"1" value-name:"N"`
+        MaxQueryTerms int    `long:"max-query-terms" description:"passed on lucene option" default:"25" value-name:"N"`
+        Size          int    `short:"s" long:"size" description:"number of results per query" default:"5" value-name:"N"`
 
         ShowVersion bool `short:"V" default:"false" long:"version" description:"show version and exit"`
         ShowHelp    bool `short:"h" default:"false" long:"help" description:"show this help message"`
