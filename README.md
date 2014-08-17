@@ -26,16 +26,18 @@ dsqpool
           --min-term-freq=N         passed on lucene option (1)
           --max-query-terms=N       passed on lucene option (25)
       -s, --size=N                  number of results per query (5)
+      -w, --workers=N               number of workers, 0 means number of available cpus (0)
       -V, --version                 show version and exit (false)
       -h, --help                    show this help message (false)
+          --cpuprofile=FILE         write pprof file
 
 Start simple with the `--like` option. This will run a *more like this* query
 over all indices. It will return document ids, that are similar
 (in title and subtitle) to the word "Language":
 
     $ duppool --like Language
-    ebl EBL1599295  6.759
-    ebl EBL1715045  6.382
-    nep 9781108063784   5.320
-    nep 9780415576826   5.270
-    nep 9780415487528   5.270
+    ebl title   EBL1599295  6.759
+    ebl title   EBL1715045  6.382
+    nep title   9781108063784   5.320
+    nep title   9780415576826   5.270
+    nep title   9780415487528   5.270
