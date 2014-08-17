@@ -23,7 +23,7 @@ func Query(conn dupsquash.SearchConnection, indices *[]string, query *map[string
 	}
 	results := make([][]string, len(searchResults.Hits.Hits))
 	for i, hit := range searchResults.Hits.Hits {
-		results[i] = []string{hit.Index, hit.Id, strconv.FormatFloat(hit.Score, 'f', 3, 64)}
+		results[i] = []string{hit.Index, hit.Type, hit.Id, strconv.FormatFloat(hit.Score, 'f', 3, 64)}
 	}
 	return results
 }
