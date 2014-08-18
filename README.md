@@ -5,7 +5,7 @@ A fuzzy deduplication tool tailored towards MARC.
 
 [![Build Status](http://img.shields.io/travis/miku/dupsquash.svg?style=flat)](https://travis-ci.org/miku/dupsquash)
 
-dsqpool
+duppool
 -------
 
     $ duppool -h
