@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-TARGETS = duppool dupfilter
+TARGETS = duppool
 
 # http://docs.travis-ci.com/user/languages/go/#Default-Test-Script
 test:
@@ -31,9 +31,6 @@ cover:
 
 duppool:
 	go build cmd/duppool/duppool.go
-
-dupfilter:
-	go build cmd/dupfilter/dupfilter.go
 
 # ==== packaging
 
