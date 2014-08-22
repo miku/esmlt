@@ -93,7 +93,7 @@ func main() {
 		FileDelimiter string `long:"delimiter" default:"\t" description:"column delimiter of the file" value-name:"DELIM"`
 		FileNullValue string `long:"null-value" default:"<NULL>" description:"value that indicates empty value in input file" value-name:"STRING"`
 
-		Index         string `long:"index" description:"index or indices (space separated)" value-name:"NAME[S]"`
+		Index         string `long:"indices" description:"index or indices (space separated)" value-name:"NAME[S]"`
 		IndexFields   string `short:"x" default:"content.245.a content.245.b" long:"index-fields"description:"which index fields to use for comparison" value-name:"NAME[S]"`
 		MinTermFreq   int    `long:"min-term-freq" description:"passed on lucene option" default:"1" value-name:"N"`
 		MaxQueryTerms int    `long:"max-query-terms" description:"passed on lucene option" default:"25" value-name:"N"`
