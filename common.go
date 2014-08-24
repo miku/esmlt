@@ -42,8 +42,8 @@ func ParseIndices(s string) ([]int, error) {
 	return ParseIndicesShift(s, -1)
 }
 
-// ConcatenateValuesNull extracts values according to indices slice and concatenates them
-// values that equal a given `nullValue` are ignored
+// ConcatenateValuesNull extracts values according to indices slice and concatenates them.
+// Values that equal a given `nullValue` are ignored.
 func ConcatenateValuesNull(values []string, indices []int, nullValue string) (string, error) {
 	var buffer bytes.Buffer
 	for _, i := range indices {
