@@ -65,3 +65,33 @@ func ConcatenateValuesNull(values []string, indices []int, nullValue string) (st
 func ConcatenateValues(values []string, indices []int) (string, error) {
 	return ConcatenateValuesNull(values, indices, "<NULL>")
 }
+
+// Value returns the value in a nested map according to a key in dot notation
+func Value(key string, doc map[string]interface{}) interface{} {
+	keys := strings.Split(key, ".")
+	for _, k := range keys {
+		value := doc[k]
+		if value == nil {
+			return nil
+		}
+		switch value.(type) {
+		case map[string]interface{}:
+			return Value(strings.Join(keys[1:], "."), value.(map[string]interface{}))
+		case []interface{}:
+			if len(value.([]interface{})) == 0 {
+				return nil
+			}
+			first := value.([]interface{})[0]
+			switch first.(type) {
+			case map[string]interface{}:
+				return Value(strings.Join(keys[1:], "."), first.(map[string]interface{}))
+			case string:
+				return first
+				continue
+			}
+		default:
+			return value
+		}
+	}
+	return nil
+}

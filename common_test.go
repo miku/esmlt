@@ -70,3 +70,24 @@ func TestConcatenateValuesNull(t *testing.T) {
 		}
 	}
 }
+
+func TestValue(t *testing.T) {
+	var tests = []struct {
+		key string
+		doc map[string]interface{}
+		out interface{}
+	}{
+		{"a", map[string]interface{}{"a": 1, "b": 2}, 1},
+		{"b", map[string]interface{}{"a": 1, "b": 2}, 2},
+		{"c", map[string]interface{}{"a": 1, "b": 2}, nil},
+		{"a.b", map[string]interface{}{"a": map[string]interface{}{"b": "22"}, "b": 2}, "22"},
+		{"a.c", map[string]interface{}{"a": map[string]interface{}{"b": "22"}, "b": 2}, nil},
+		{"a.b.c", map[string]interface{}{"a": map[string]interface{}{"b": map[string]interface{}{"c": "ccc"}, "c": 2}}, "ccc"},
+	}
+	for _, tt := range tests {
+		out := Value(tt.key, tt.doc)
+		if !reflect.DeepEqual(out, tt.out) {
+			t.Errorf("Value(%s, %v) => %v, want: %v", tt.key, tt.doc, out, tt.out)
+		}
+	}
+}
