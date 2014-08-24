@@ -23,6 +23,7 @@ type Work struct {
 	Indices    []string
 	Connection dupsquash.SearchConnection
 
+	NullValue     string
 	Fields        []string
 	LikeText      string
 	MinTermFreq   int
@@ -46,7 +47,7 @@ func Worker(in chan *Work, out chan [][]string, wg *sync.WaitGroup) {
 			},
 			"size": work.Size,
 		}
-		queryResults := Query(work.Connection, &work.Indices, &query)
+		queryResults := QueryField(work, &query)
 		var results [][]string
 		for _, result := range queryResults {
 			parts := append(work.Values, result...)
@@ -67,16 +68,28 @@ func FanInWriter(writer io.Writer, in chan [][]string, done chan bool) {
 	done <- true
 }
 
-// Query runs `query` over connection `conn` on `indices` and returns a slice of string slices
-func Query(conn dupsquash.SearchConnection, indices *[]string, query *map[string]interface{}) [][]string {
+func QueryField(work *Work, query *map[string]interface{}) [][]string {
 	extraArgs := make(url.Values, 1)
-	searchResults, err := conn.Search(*query, *indices, []string{""}, extraArgs)
+	searchResults, err := work.Connection.Search(*query, work.Indices, []string{""}, extraArgs)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	results := make([][]string, len(searchResults.Hits.Hits))
-	for i, hit := range searchResults.Hits.Hits {
-		results[i] = []string{hit.Index, hit.Type, hit.Id, strconv.FormatFloat(hit.Score, 'f', 3, 64)}
+	var results [][]string
+	for _, hit := range searchResults.Hits.Hits {
+		var values []string
+		for _, field := range work.Fields {
+			value := dupsquash.Value(field, hit.Source)
+			switch value.(type) {
+			case string:
+				values = append(values, value.(string))
+			case nil:
+				values = append(values, work.NullValue)
+			default:
+				continue
+			}
+		}
+		fields := append([]string{hit.Index, hit.Type, hit.Id, strconv.FormatFloat(hit.Score, 'f', 3, 64)}, values...)
+		results = append(results, fields)
 	}
 	return results
 }
@@ -89,7 +102,7 @@ func main() {
 	likeFile := flag.String("file", "", "input file")
 	fileColumn := flag.String("columns", "1", "which column to use as like-text")
 	columnDelimiter := flag.String("delimiter", "\t", "column delimiter of the input file")
-	columnNull := flag.String("null", "<NULL>", "column value to ignore")
+	columnNull := flag.String("null", "NOT_AVAILABLE", "column value to ignore")
 	indicesString := flag.String("indices", "", "index or indices to query")
 	indexFields := flag.String("fields", "content.245.a content.245.b", "index fields to query")
 	minTermFreq := flag.Int("min-term-freq", 1, "min term frequency")
@@ -173,6 +186,7 @@ func main() {
 				Indices:       indices,
 				Connection:    conn,
 				Fields:        fields,
+				NullValue:     *columnNull,
 				LikeText:      likeText,
 				MinTermFreq:   *minTermFreq,
 				MaxQueryTerms: *maxQueryTerms,
@@ -211,7 +225,18 @@ func main() {
 			"size": *size,
 		}
 
-		results := Query(conn, &indices, &query)
+		work := Work{
+			Indices:       indices,
+			Connection:    conn,
+			Fields:        fields,
+			NullValue:     *columnNull,
+			LikeText:      *likeText,
+			MinTermFreq:   *minTermFreq,
+			MaxQueryTerms: *maxQueryTerms,
+			Size:          *size,
+			Values:        []string{},
+		}
+		results := QueryField(&work, &query)
 		for _, result := range results {
 			fmt.Println(strings.Join(result, "\t"))
 		}
