@@ -1,4 +1,4 @@
-Package: dupsquash
+Package: esmlt
 Version: 0.1.0
 Section: utils
 Priority: optional
@@ -6,4 +6,4 @@ Architecture: amd64
 Essential: no
 Depends: libc6 (>= 2.12)
 Maintainer: Martin Czygan
-Description: Finds fuzzy duplicates in elasticsearch indices.
+Description: Data deduplication tool that runs many more-like-this queries agains elasticsearch in parallel.

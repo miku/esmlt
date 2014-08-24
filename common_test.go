@@ -1,4 +1,4 @@
-package dupsquash
+package esmlt
 
 import (
 	"reflect"

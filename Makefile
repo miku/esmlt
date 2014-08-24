@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-TARGETS = duppool
+TARGETS = esmlt
 
 # http://docs.travis-ci.com/user/languages/go/#Default-Test-Script
 test:
@@ -21,33 +21,33 @@ clean:
 	go clean
 	rm -f coverage.out
 	rm -f $(TARGETS)
-	rm -f dupsquash-*.x86_64.rpm
-	rm -f debian/dupsquash*.deb
-	rm -rf debian/dupsquash/usr
+	rm -f esmlt-*.x86_64.rpm
+	rm -f debian/esmlt*.deb
+	rm -rf debian/esmlt/usr
 
 cover:
 	go get -d && go test -v	-coverprofile=coverage.out
 	go tool cover -html=coverage.out
 
-duppool:
-	go build cmd/duppool/duppool.go
+esmlt:
+	go build cmd/esmlt/esmlt.go
 
 # ==== packaging
 
 deb: $(TARGETS)
-	mkdir -p debian/dupsquash/usr/sbin
-	cp $(TARGETS) debian/dupsquash/usr/sbin
-	cd debian && fakeroot dpkg-deb --build dupsquash .
+	mkdir -p debian/esmlt/usr/sbin
+	cp $(TARGETS) debian/esmlt/usr/sbin
+	cd debian && fakeroot dpkg-deb --build esmlt .
 
 REPOPATH = /usr/share/nginx/html/repo/CentOS/6/x86_64
 
 publish: rpm
-	cp dupsquash-*.rpm $(REPOPATH)
+	cp esmlt-*.rpm $(REPOPATH)
 	createrepo $(REPOPATH)
 
 rpm: $(TARGETS)
 	mkdir -p $(HOME)/rpmbuild/{BUILD,SOURCES,SPECS,RPMS}
-	cp ./packaging/dupsquash.spec $(HOME)/rpmbuild/SPECS
+	cp ./packaging/esmlt.spec $(HOME)/rpmbuild/SPECS
 	cp $(TARGETS) $(HOME)/rpmbuild/BUILD
-	./packaging/buildrpm.sh dupsquash
-	cp $(HOME)/rpmbuild/RPMS/x86_64/dupsquash*.rpm .
+	./packaging/buildrpm.sh esmlt
+	cp $(HOME)/rpmbuild/RPMS/x86_64/esmlt*.rpm .
