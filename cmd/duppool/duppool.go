@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/belogik/goes"
-	flags "github.com/jessevdk/go-flags"
 	"github.com/miku/dupsquash"
 )
 
@@ -82,48 +82,42 @@ func Query(conn dupsquash.SearchConnection, indices *[]string, query *map[string
 }
 
 func main() {
-	var opts struct {
-		ElasticSearchHost string `long:"host" default:"localhost" description:"elasticsearch host" value-name:"HOST"`
-		ElasticSearchPort string `long:"port" default:"9200" description:"elasticsearch port" value-name:"PORT"`
 
-		Like string `short:"l" long:"like" description:"string to compare" value-name:"STRING"`
+	esHost := flag.String("host", "localhost", "elasticsearch host")
+	esPort := flag.String("port", "9200", "elasticsearch port")
+	likeText := flag.String("like", "", "more like this queries like-text")
+	likeFile := flag.String("file", "", "input file")
+	fileColumn := flag.String("columns", "1", "which column to use as like-text")
+	columnDelimiter := flag.String("delimiter", "\t", "column delimiter of the input file")
+	columnNull := flag.String("null", "<NULL>", "column value to ignore")
+	indicesString := flag.String("indices", "", "index or indices to query")
+	indexFields := flag.String("fields", "content.245.a content.245.b", "index fields to query")
+	minTermFreq := flag.Int("min-term-freq", 1, "min term frequency")
+	maxQueryTerms := flag.Int("max-query-terms", 25, "max query terms")
+	size := flag.Int("size", 5, "maximum number of similar records to report")
+	numWorkers := flag.Int("workers", runtime.NumCPU(), "number of workers to use")
+	version := flag.Bool("v", false, "prints current program version")
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
 
-		LikeFile      string `short:"i" long:"file" description:"input file (TSV) with strings to compare" value-name:"FILENAME"`
-		FileColumn    string `short:"f" long:"column" default:"1" description:"which column(s) to pick for the comparison" value-name:"COLUMN[S]"`
-		FileDelimiter string `long:"delimiter" default:"\t" description:"column delimiter of the file" value-name:"DELIM"`
-		FileNullValue string `long:"null-value" default:"<NULL>" description:"value that indicates empty value in input file" value-name:"STRING"`
-
-		Index         string `long:"indices" description:"index or indices (space separated)" value-name:"NAME[S]"`
-		IndexFields   string `short:"x" default:"content.245.a content.245.b" long:"index-fields"description:"which index fields to use for comparison" value-name:"NAME[S]"`
-		MinTermFreq   int    `long:"min-term-freq" description:"passed on lucene option" default:"1" value-name:"N"`
-		MaxQueryTerms int    `long:"max-query-terms" description:"passed on lucene option" default:"25" value-name:"N"`
-		Size          int    `short:"s" long:"size" description:"number of results per query" default:"5" value-name:"N"`
-
-		NumWorkers  int    `short:"w" long:"workers" default:"0" description:"number of workers, 0 means number of available cpus" value-name:"N"`
-		ShowVersion bool   `short:"V" default:"false" long:"version" description:"show version and exit"`
-		ShowHelp    bool   `short:"h" default:"false" long:"help" description:"show this help message"`
-		CpuProfile  string `long:"cpuprofile" description:"write pprof file" value-name:"FILE"`
+	var PrintUsage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
+		flag.PrintDefaults()
 	}
 
-	argparser := flags.NewParser(&opts, flags.PrintErrors|flags.PassDoubleDash)
-	_, err := argparser.Parse()
-	if err != nil {
-		log.Fatal(err)
-	}
+	flag.Parse()
 
-	if opts.ShowVersion {
+	if *version {
 		fmt.Printf("%s\n", dupsquash.AppVersion)
 		return
 	}
 
-	argparser.Usage = fmt.Sprintf("[OPTIONS]")
-	if opts.ShowHelp {
-		argparser.WriteHelp(os.Stdout)
-		return
+	if *likeText == "" && *likeFile == "" {
+		PrintUsage()
+		os.Exit(1)
 	}
 
-	if opts.CpuProfile != "" {
-		f, err := os.Create(opts.CpuProfile)
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -131,34 +125,27 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	if opts.NumWorkers == 0 {
-		opts.NumWorkers = runtime.NumCPU()
-		runtime.GOMAXPROCS(opts.NumWorkers)
-	}
+	runtime.GOMAXPROCS(*numWorkers)
 
-	if opts.NumWorkers < 0 {
-		log.Fatal("value for --workers must be non-negative")
-	}
+	conn := goes.NewConnection(*esHost, *esPort)
+	fields := strings.Fields(*indexFields)
+	indices := strings.Fields(*indicesString)
 
-	conn := goes.NewConnection(opts.ElasticSearchHost, opts.ElasticSearchPort)
-	fields := strings.Fields(opts.IndexFields)
-	indices := strings.Fields(opts.Index)
-
-	if opts.LikeFile != "" {
-		if _, err := os.Stat(opts.LikeFile); os.IsNotExist(err) {
-			log.Fatalf("no such file or directory: %s\n", opts.LikeFile)
+	if *likeFile != "" {
+		if _, err := os.Stat(*likeFile); os.IsNotExist(err) {
+			log.Fatalf("no such file or directory: %s\n", *likeFile)
 		}
 
-		file, err := os.Open(opts.LikeFile)
+		file, err := os.Open(*likeFile)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
-		projector, err := dupsquash.ParseIndices(opts.FileColumn)
+		projector, err := dupsquash.ParseIndices(*fileColumn)
 		if err != nil {
-			log.Fatalf("could not parse column indices: %s\n", opts.FileColumn)
+			log.Fatalf("could not parse column indices: %s\n", *fileColumn)
 		}
 
 		queue := make(chan *Work)
@@ -170,14 +157,14 @@ func main() {
 		go FanInWriter(writer, results, done)
 
 		var wg sync.WaitGroup
-		for i := 0; i < opts.NumWorkers; i++ {
+		for i := 0; i < *numWorkers; i++ {
 			wg.Add(1)
 			go Worker(queue, results, &wg)
 		}
 
 		for scanner.Scan() {
-			values := strings.Split(scanner.Text(), opts.FileDelimiter)
-			likeText, err := dupsquash.ConcatenateValuesNull(values, projector, opts.FileNullValue)
+			values := strings.Split(scanner.Text(), *columnDelimiter)
+			likeText, err := dupsquash.ConcatenateValuesNull(values, projector, *columnNull)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -187,9 +174,9 @@ func main() {
 				Connection:    conn,
 				Fields:        fields,
 				LikeText:      likeText,
-				MinTermFreq:   opts.MinTermFreq,
-				MaxQueryTerms: opts.MaxQueryTerms,
-				Size:          opts.Size,
+				MinTermFreq:   *minTermFreq,
+				MaxQueryTerms: *maxQueryTerms,
+				Size:          *size,
 				Values:        values,
 			}
 			queue <- &work
@@ -211,17 +198,17 @@ func main() {
 		return
 	}
 
-	if opts.Like != "" {
+	if *likeText != "" {
 		var query = map[string]interface{}{
 			"query": map[string]interface{}{
 				"more_like_this": map[string]interface{}{
 					"fields":          fields,
-					"like_text":       opts.Like,
-					"min_term_freq":   opts.MinTermFreq,
-					"max_query_terms": opts.MaxQueryTerms,
+					"like_text":       *likeText,
+					"min_term_freq":   *minTermFreq,
+					"max_query_terms": *maxQueryTerms,
 				},
 			},
-			"size": opts.Size,
+			"size": *size,
 		}
 
 		results := Query(conn, &indices, &query)
