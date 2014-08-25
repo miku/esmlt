@@ -120,7 +120,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Printf("%s\n", dupsquash.AppVersion)
+		fmt.Printf("%s\n", esmlt.Version)
 		return
 	}
 

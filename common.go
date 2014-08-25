@@ -11,7 +11,7 @@ import (
 )
 
 // Application Version
-const AppVersion = "0.1.0"
+const Version = "0.1.0"
 
 // SearchConnection is an interface that is satisfied by goes.Connection and
 // can be satisfied by mock index connections for testing
