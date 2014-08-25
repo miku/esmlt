@@ -1,11 +1,11 @@
-dupsquash
-=========
+esmlt
+=====
 
-A fuzzy deduplication tool tailored towards MARC.
+Run many more-like-this queries agains elasticsearch in parallel.
 
-[![Build Status](http://img.shields.io/travis/miku/dupsquash.svg?style=flat)](https://travis-ci.org/miku/dupsquash)
+[![Build Status](http://img.shields.io/travis/miku/esmlt.svg?style=flat)](https://travis-ci.org/miku/esmlt)
 
-duppool
+es
 -------
 
     $ esmlt
