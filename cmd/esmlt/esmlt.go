@@ -16,11 +16,12 @@ import (
 	"time"
 
 	"github.com/belogik/goes"
+	"github.com/miku/esmlt"
 )
 
 type Work struct {
 	Indices    []string
-	Connection dupsquash.SearchConnection
+	Connection esmlt.SearchConnection
 
 	NullValue     string
 	Fields        []string
@@ -77,7 +78,7 @@ func QueryField(work *Work, query *map[string]interface{}) [][]string {
 	for _, hit := range searchResults.Hits.Hits {
 		var values []string
 		for _, field := range work.Fields {
-			value := dupsquash.Value(field, hit.Source)
+			value := esmlt.Value(field, hit.Source)
 			switch value.(type) {
 			case string:
 				values = append(values, value.(string))
@@ -155,7 +156,7 @@ func main() {
 		defer file.Close()
 
 		scanner := bufio.NewScanner(file)
-		projector, err := dupsquash.ParseIndices(*fileColumn)
+		projector, err := esmlt.ParseIndices(*fileColumn)
 		if err != nil {
 			log.Fatalf("could not parse column indices: %s\n", *fileColumn)
 		}
@@ -176,7 +177,7 @@ func main() {
 
 		for scanner.Scan() {
 			values := strings.Split(scanner.Text(), *columnDelimiter)
-			likeText, err := dupsquash.ConcatenateValuesNull(values, projector, *columnNull)
+			likeText, err := esmlt.ConcatenateValuesNull(values, projector, *columnNull)
 			if err != nil {
 				log.Fatal(err)
 			}
