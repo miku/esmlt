@@ -5,6 +5,11 @@ Run many more-like-this queries agains elasticsearch in parallel.
 
 [![Build Status](http://img.shields.io/travis/miku/esmlt.svg?style=flat)](https://travis-ci.org/miku/esmlt)
 
+Installation
+------------
+
+    $ go get github.com/miku/esmlt/cmd/esmlt
+
 Usage
 -----
 
