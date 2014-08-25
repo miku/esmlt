@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/belogik/goes"
-	"github.com/miku/dupsquash"
 )
 
 type Work struct {
