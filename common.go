@@ -77,6 +77,9 @@ func Value(key string, doc map[string]interface{}) interface{} {
 		}
 		switch value.(type) {
 		case map[string]interface{}:
+			if len(keys[1:]) == 0 {
+				return nil
+			}
 			return Value(strings.Join(keys[1:], "."), value.(map[string]interface{}))
 		case []interface{}:
 			if len(value.([]interface{})) == 0 {
@@ -85,6 +88,9 @@ func Value(key string, doc map[string]interface{}) interface{} {
 			first := value.([]interface{})[0]
 			switch first.(type) {
 			case map[string]interface{}:
+				if len(keys[1:]) == 0 {
+					return nil
+				}
 				return Value(strings.Join(keys[1:], "."), first.(map[string]interface{}))
 			case string:
 				return first
