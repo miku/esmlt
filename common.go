@@ -66,7 +66,8 @@ func ConcatenateValues(values []string, indices []int) (string, error) {
 	return ConcatenateValuesNull(values, indices, "<NULL>")
 }
 
-// Value returns the value in a nested map according to a key in dot notation
+// Value returns the value in a (nested) map according to a key in dot notation.
+// If the value is a slice, only the first element is considered.
 func Value(key string, doc map[string]interface{}) interface{} {
 	keys := strings.Split(key, ".")
 	for _, k := range keys {
