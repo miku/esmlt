@@ -80,6 +80,8 @@ func TestValue(t *testing.T) {
 		{"a", map[string]interface{}{"a": 1, "b": 2}, 1},
 		{"b", map[string]interface{}{"a": 1, "b": 2}, 2},
 		{"c", map[string]interface{}{"a": 1, "b": 2}, nil},
+		{"a", map[string]interface{}{"a": []int{1, 2}, "b": 2}, []int{1, 2}},
+		{"a.c", map[string]interface{}{"a": []interface{}{map[string]interface{}{"c": "3"}, "d"}, "b": 2}, "3"},
 		{"a.b", map[string]interface{}{"a": map[string]interface{}{"b": "22"}, "b": 2}, "22"},
 		{"a.c", map[string]interface{}{"a": map[string]interface{}{"b": "22"}, "b": 2}, nil},
 		{"a.b.c", map[string]interface{}{"a": map[string]interface{}{"b": map[string]interface{}{"c": "ccc"}, "c": 2}}, "ccc"},
